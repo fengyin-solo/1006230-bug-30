@@ -79,13 +79,14 @@ import {
   moduleMeta,
   runAction as applyAction,
 } from '@/api/local-service'
+import { listRows } from '@/data/local-store'
+import { pendingDispatchCount, todayFlowTotals } from '@/data/hydrology'
 import type { EntryRow } from '@/data/types'
 
 const meta = moduleMeta('flood')
 const columns = ["操作编号", "泄洪闸号", "开启孔数", "泄洪流量", "下游预警", "操作时间", "操作人员", "操作状态"]
 const actions = ["提交审批", "开启泄洪", "结束泄洪"]
 const statuses = ["待审批", "已批准", "泄洪中", "已结束"]
-const stats = [{"label": "待审批操作", "value": 0}, {"label": "泄洪中闸门", "value": 0}, {"label": "今日泄洪量", "value": 0}]
 
 const rows = ref<EntryRow[]>([])
 const total = ref(0)
@@ -98,6 +99,19 @@ const statusSummary = computed(() =>
     count: rows.value.filter((row) => String(row.status) === status).length,
   })),
 )
+
+// 水情待调度条数直接读水情那份数据：退回一条这里就跟着少一条/多一条，两边永远对得上。
+const stats = computed(() => {
+  const flow = todayFlowTotals()
+  const gateCount = (status: string) =>
+    listRows(meta.key).filter((row) => String(row.status) === status).length
+  return [
+    { label: "待审批操作", value: gateCount('待审批') },
+    { label: "泄洪中闸门", value: gateCount('泄洪中') },
+    { label: "水情待调度记录", value: pendingDispatchCount() },
+    { label: `今日出库流量（${flow.date}）`, value: `${flow.outflow} m³/s` },
+  ]
+})
 
 function resetFilters() {
   filters.value = {}

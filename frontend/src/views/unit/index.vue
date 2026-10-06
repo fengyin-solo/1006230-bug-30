@@ -79,13 +79,13 @@ import {
   moduleMeta,
   runAction as applyAction,
 } from '@/api/local-service'
+import { listRows } from '@/data/local-store'
 import type { EntryRow } from '@/data/types'
 
 const meta = moduleMeta('unit')
 const columns = ["机组编号", "机组型号", "额定转速", "有功出力", "无功出力", "累计运行小时", "振动数值", "运行状态"]
 const actions = ["开机并网", "停机转备", "登记故障"]
 const statuses = ["待启动", "运行中", "停机备用", "故障停机"]
-const stats = [{"label": "运行中机组", "value": 0}, {"label": "备用机组", "value": 0}, {"label": "故障机组", "value": 0}]
 
 const rows = ref<EntryRow[]>([])
 const total = ref(0)
@@ -98,6 +98,17 @@ const statusSummary = computed(() =>
     count: rows.value.filter((row) => String(row.status) === status).length,
   })),
 )
+
+// 台数随状态实时派生，别的入口改了状态，这里的台数跟着变，不靠存量标记。
+const stats = computed(() => {
+  const countOf = (status: string) =>
+    listRows(meta.key).filter((row) => String(row.status) === status).length
+  return [
+    { label: "运行中机组", value: countOf('运行中') },
+    { label: "备用机组", value: countOf('停机备用') },
+    { label: "故障机组", value: countOf('故障停机') },
+  ]
+})
 
 function resetFilters() {
   filters.value = {}

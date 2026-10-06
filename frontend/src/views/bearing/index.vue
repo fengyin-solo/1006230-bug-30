@@ -79,13 +79,14 @@ import {
   moduleMeta,
   runAction as applyAction,
 } from '@/api/local-service'
+import { listRows } from '@/data/local-store'
+import { pendingDispatchCount } from '@/data/hydrology'
 import type { EntryRow } from '@/data/types'
 
 const meta = moduleMeta('bearing')
 const columns = ["轴承编号", "所属机组", "上导温度", "下导温度", "油位高度", "振动数值", "检测日期", "轴承状态"]
 const actions = ["提交检测", "标记偏高", "确认检修"]
 const statuses = ["正常", "温度偏高", "待检修", "已检修"]
-const stats = [{"label": "正常轴承", "value": 0}, {"label": "温度偏高轴承", "value": 0}, {"label": "待检修轴承", "value": 0}]
 
 const rows = ref<EntryRow[]>([])
 const total = ref(0)
@@ -98,6 +99,18 @@ const statusSummary = computed(() =>
     count: rows.value.filter((row) => String(row.status) === status).length,
   })),
 )
+
+// 待办清单随状态实时派生；水情退回拨正一条，联动入口的台数跟着变。
+const stats = computed(() => {
+  const countOf = (status: string) =>
+    listRows(meta.key).filter((row) => String(row.status) === status).length
+  return [
+    { label: "正常轴承", value: countOf('正常') },
+    { label: "温度偏高轴承", value: countOf('温度偏高') },
+    { label: "待检修轴承", value: countOf('待检修') },
+    { label: "水情待调度联动", value: pendingDispatchCount() },
+  ]
+})
 
 function resetFilters() {
   filters.value = {}

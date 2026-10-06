@@ -18,6 +18,16 @@ export type ModuleMeta = {
   actions: string[]
   actionTargets: Record<string, string>
   metrics: string[]
+  /** 状态机：哪些动作只允许从指定状态发出；缺省的动作沿用原来的通用流转。 */
+  guardedActions?: Record<string, string | string[]>
+  /** 反向动作：目标状态不是链路终点，执行后仍要留在待办队列里。 */
+  rollbackActions?: string[]
+}
+
+export type PageQuery = {
+  filters?: Record<string, string>
+  page?: number
+  size?: number
 }
 
 export type PageResult = {
@@ -25,6 +35,13 @@ export type PageResult = {
   total: number
   page: number
   size: number
+}
+
+/** 过滤收窄后某条记录在原次序中的定位：页码 + 页内序号。 */
+export type LocateResult = {
+  page: number
+  index: number
+  found: boolean
 }
 
 export type ActionResult = {
