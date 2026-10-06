@@ -74,9 +74,11 @@
 import { computed, onMounted, ref } from 'vue'
 
 import {
+  countByStatus,
   downloadEntries,
   listEntries,
   moduleMeta,
+  pendingDispatchCount,
   runAction as applyAction,
 } from '@/api/local-service'
 import type { EntryRow } from '@/data/types'
@@ -85,7 +87,12 @@ const meta = moduleMeta('flood')
 const columns = ["操作编号", "泄洪闸号", "开启孔数", "泄洪流量", "下游预警", "操作时间", "操作人员", "操作状态"]
 const actions = ["提交审批", "开启泄洪", "结束泄洪"]
 const statuses = ["待审批", "已批准", "泄洪中", "已结束"]
-const stats = [{"label": "待审批操作", "value": 0}, {"label": "泄洪中闸门", "value": 0}, {"label": "今日泄洪量", "value": 0}]
+// 第三个指标直接读水情台账的待调度（已观测）条数，两边永远对得上。
+const stats = ref([
+  {"label": "待审批操作", "value": 0},
+  {"label": "水情待调度条数", "value": 0},
+  {"label": "泄洪中闸门", "value": 0},
+])
 
 const rows = ref<EntryRow[]>([])
 const total = ref(0)
@@ -128,6 +135,11 @@ function reload() {
     const payload = listEntries(meta.key, filters.value)
     rows.value = payload.items
     total.value = payload.total
+    stats.value = [
+      {"label": "待审批操作", "value": countByStatus(meta.key, '待审批')},
+      {"label": "水情待调度条数", "value": pendingDispatchCount()},
+      {"label": "泄洪中闸门", "value": countByStatus(meta.key, '泄洪中')},
+    ]
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : '泄洪操作列表读取失败'
   }

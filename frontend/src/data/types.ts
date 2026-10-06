@@ -18,6 +18,14 @@ export type ModuleMeta = {
   actions: string[]
   actionTargets: Record<string, string>
   metrics: string[]
+  // 开启后动作只能沿 statuses 顺序推进，跳步（如未观测直接调度）会被拒绝。
+  ordered?: boolean
+}
+
+export type ListQuery = {
+  filters?: Record<string, string>
+  page?: number
+  size?: number
 }
 
 export type PageResult = {
@@ -25,6 +33,8 @@ export type PageResult = {
   total: number
   page: number
   size: number
+  // 当前过滤条件下的总页数：页面分页器与导出共用同一口径。
+  totalPages: number
 }
 
 export type ActionResult = {

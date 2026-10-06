@@ -74,6 +74,7 @@
 import { computed, onMounted, ref } from 'vue'
 
 import {
+  countByStatus,
   downloadEntries,
   listEntries,
   moduleMeta,
@@ -85,7 +86,12 @@ const meta = moduleMeta('bearing')
 const columns = ["轴承编号", "所属机组", "上导温度", "下导温度", "油位高度", "振动数值", "检测日期", "轴承状态"]
 const actions = ["提交检测", "标记偏高", "确认检修"]
 const statuses = ["正常", "温度偏高", "待检修", "已检修"]
-const stats = [{"label": "正常轴承", "value": 0}, {"label": "温度偏高轴承", "value": 0}, {"label": "待检修轴承", "value": 0}]
+// 导轴承待办清单的台数全部实时从同一份台账统计，动作后跟着变。
+const stats = ref([
+  {"label": "正常轴承", "value": 0},
+  {"label": "温度偏高轴承", "value": 0},
+  {"label": "待检修轴承", "value": 0},
+])
 
 const rows = ref<EntryRow[]>([])
 const total = ref(0)
@@ -128,6 +134,11 @@ function reload() {
     const payload = listEntries(meta.key, filters.value)
     rows.value = payload.items
     total.value = payload.total
+    stats.value = [
+      {"label": "正常轴承", "value": countByStatus(meta.key, '正常')},
+      {"label": "温度偏高轴承", "value": countByStatus(meta.key, '温度偏高')},
+      {"label": "待检修轴承", "value": countByStatus(meta.key, '待检修')},
+    ]
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : '导轴承列表读取失败'
   }
